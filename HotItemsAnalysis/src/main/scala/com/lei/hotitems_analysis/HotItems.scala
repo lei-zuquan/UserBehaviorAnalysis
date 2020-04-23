@@ -1,5 +1,6 @@
 package com.lei.hotitems_analysis
 
+import com.lei.hotitems_analysis.util.MyKafkaUtil
 import com.sun.jmx.snmp.Timestamp
 import org.apache.flink.api.common.functions.AggregateFunction
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
@@ -38,12 +39,13 @@ object HotItems {
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
     // 2、读取数据
-    val dataStream: DataStream[UserBehavior] = env.readTextFile("HotItemsAnalysis/src/main/resources/UserBehavior.csv")
+    //val dataStream: DataStream[UserBehavior] = env.readTextFile("HotItemsAnalysis/src/main/resources/UserBehavior.csv")
+    val dataStream: DataStream[UserBehavior] = env.addSource(MyKafkaUtil.getConsumer("hotitems"))
       .map(data => {
         val dataArray: Array[String] = data.split(",")
         UserBehavior(dataArray(0).trim.toLong, dataArray(1).trim.toLong, dataArray(2).trim.toInt, dataArray(3).trim, dataArray(4).trim.toLong)
       })
-      .assignAscendingTimestamps(_.timestamp * 1000L)
+      .assignAscendingTimestamps(_.timestamp * 1000L) // 数据输入是有序的使用 assignAscendingTimestamps
 
     // 3、transform 处理数据
     val processStream: DataStream[String] = dataStream
