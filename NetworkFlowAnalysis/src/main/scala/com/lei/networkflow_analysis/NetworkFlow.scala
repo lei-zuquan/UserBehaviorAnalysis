@@ -1,10 +1,10 @@
 package com.lei.networkflow_analysis
 
 
+import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util
 
-import com.sun.jmx.snmp.Timestamp
 import org.apache.flink.api.common.functions.AggregateFunction
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.streaming.api.TimeCharacteristic
@@ -27,6 +27,26 @@ import scala.collection.mutable.ListBuffer
  * @Description:
  */
 
+/**
+ * 基于服务器log 的热门页面浏览量统计：
+ *
+ *    我们现在要实现的模块是 "实时流量统计"。对于一个电商平台而言，用户登陆的入口流量、不同页面的访问流量都是
+ * 值得分析的重要数据，而这些数据，可以简单地从web服务器的日志提取出来。
+ *
+ *    我们在这里先实现"热门页面浏览数"的统计，也就是读取服务器日志中的每一条log，统计在一段时间内用户访问每
+ * 一个url的次数，然后排序输出显示。
+ *
+ *    具体做法为：每隔5秒，输出最近10分钟内访问量最多的前N个 URL。可以看出，这个需求与之前"实时热门商品统计"
+ * 非常类似，所以我们完全可以借鉴此前的代码。
+ *
+ *    在src/main/scala 下创建NetworkFlow.scala 文件，新建一个单例对象。定义样例类 ApacheLogEvent，这是
+ * 输入的日志数据流；另外还有UrlViewCount，这是窗口操作统计的输出数据类型。在main 函数中创建 StreamExecutionEnvironment
+ * 并做配置，然后从apache.log文件中读取数据，并包装成ApacheLogEvent类型。
+ *
+ *    需要注意的是，原如日志中的时间是"dd/MM/yyyy:HH:mm:ss"的形式，需要定义一个DateTimeFormat将其转换为
+ * 我们需要的时间戳格式：
+ *
+ */
 // 输入数据样例类
 case class ApacheLogEvent(ip:String, userId:String, eventTime:Long, method:String, url:String)
 
@@ -42,7 +62,7 @@ object NetworkFlow {
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
     // 2、读取数据
-    val dataStream: DataStream[ApacheLogEvent] = env.readTextFile("src/main/resources/apache.log")
+    val dataStream: DataStream[String] = env.readTextFile("NetworkFlowAnalysis/src/main/resources/apache.log")
       .map(data => {
         val dataArray: Array[String] = data.split(" ")
       // 定义时间转换

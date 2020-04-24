@@ -29,8 +29,10 @@ object KafkaProducer {
 
     val zk_servers = "node-01:9092,node-02:9092,node-03:9092"
     prop.setProperty("bootstrap.servers", zk_servers)
-    prop.setProperty("key,serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    prop.setProperty("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
     prop.setProperty("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    prop.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+    prop.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
 
     // 定义一个kafka producer
     val producer = new KafkaProducer[String, String](prop)

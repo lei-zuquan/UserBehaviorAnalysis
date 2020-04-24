@@ -25,6 +25,22 @@ import scala.collection.mutable.ListBuffer
  * @Description:
  */
 
+/**
+ * 实时热门商品统计
+ *
+ * 模块代码实现
+ *    我们将实现一个"实时热门商品"的需求，可以将"实时热门商品" 翻译成程序员更好理解的需求"
+ * 每隔5分钟输出最近一小时内点击量多的前N个商品，将这个需求进行分解我们大概要做这么几件事情：
+ *        1.抽取业务时间戳，告诉Flink框架基于业务时间做窗口
+ *        2.过虑出点击行为数据
+ *        3.按一小时的窗口大小，每5分钟统计一次，做滑动窗口聚合（Sliding Window）
+ *        4.按每个窗口聚合，输出第个窗口中点击量前N名的商品
+ *
+ * 程序主体：
+ *    在 src/main/scala 下创建 HotItems.scala 文件，新建一个单例对象。定义样例类
+ *    UserBehavior 和 ItemViewCount，在 main 函数中创建 StreamExecutionEnvironment 并
+ *    做配置，然后从 UserBehavior.csv 文件中读取数据，并包装成 UserBehavior 类型。
+ */
 // 定义输出数据的样例类
 case class UserBehavior(userId: Long, itemId: Long, categoryId: Int, behavior: String, timestamp:Long)
 // 定义窗口聚合结果样例类
