@@ -16,6 +16,8 @@ import org.apache.flink.streaming.api.windowing.time.Time
  */
 
 /**
+ * 网站总浏览量（PV）的统计
+ *
  * 基于埋点日志数据的网络流量统计:
  *    但有一个问题就是同一个用户可能频繁点击网页
  *
