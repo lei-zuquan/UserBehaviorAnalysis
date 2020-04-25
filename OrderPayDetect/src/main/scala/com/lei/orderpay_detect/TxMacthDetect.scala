@@ -38,8 +38,8 @@ object TxMacthDetect {
 
     // 读取订单事件流
     val resource: URL = getClass.getResource("/OrderLog.csv")
-    val orderEventStream: KeyedStream[OrderEvent, String] = env.readTextFile(resource.getPath)
-      //val orderEventStream: KeyedStream[OrderEvent, Long] = env.socketTextStream("localhost", 7777)
+    //val orderEventStream: KeyedStream[OrderEvent, String] = env.readTextFile(resource.getPath)
+    val orderEventStream: KeyedStream[OrderEvent, String] = env.socketTextStream("localhost", 7777)
       .map(data => {
         val dataArray: Array[String] = data.split(",")
         OrderEvent(dataArray(0).trim.toLong, dataArray(1).trim, dataArray(2).trim, dataArray(3).trim.toLong)
@@ -51,8 +51,9 @@ object TxMacthDetect {
 
     // 读取支付到账事件流
     val receiptResource: URL = getClass.getResource("/ReceiptLog.csv")
-    val receiptEventStream = env.readTextFile(receiptResource.getPath)
-      .map(data => {
+    //val receiptEventStream = env.readTextFile(receiptResource.getPath)
+    val receiptEventStream = env.socketTextStream("localhost", 8888)
+    .map(data => {
         val dataArray: Array[String] = data.split(",")
         ReceiptEvent(dataArray(0).trim, dataArray(1).trim, dataArray(2).toLong)
       })
