@@ -70,38 +70,63 @@ class LoginWarning(maxFailTimes: Int) extends KeyedProcessFunction[Long, LoginEv
   lazy val loginFailState: ListState[LoginEvent] = getRuntimeContext.getListState(new ListStateDescriptor[LoginEvent]("login-fail-state", classOf[LoginEvent]))
 
 
-  override def processElement(value: LoginEvent, ctx: KeyedProcessFunction[Long, LoginEvent, Warning]#Context, collector: Collector[Warning]): Unit = {
-    val loginFailList = loginFailState.get()
-
-    // 判断类型是否fail，只添加fail的事件到状态
+  override def processElement(value: LoginEvent, ctx: KeyedProcessFunction[Long, LoginEvent, Warning]#Context, out: Collector[Warning]): Unit = {
+//    val loginFailList = loginFailState.get()
+//
+//    // 判断类型是否fail，只添加fail的事件到状态
+//    if (value.eventType == "fail"){
+//      if (!loginFailList.iterator().hasNext){ // 如果之前没有数据，需要注册定时器
+//        ctx.timerService().registerEventTimeTimer(value.eventTime * 1000L + 2000L)
+//      }
+//
+//      loginFailState.add(value)
+//    } else {
+//      // 如果是成功，清空状态
+//      loginFailState.clear()
+//    }
+    /**
+     因为如果一下子大量登陆失败，其实没有必要等到2秒钟后的定时器触发，故可以将定时器进行注释
+     */
     if (value.eventType == "fail"){
-      if (!loginFailList.iterator().hasNext){ // 如果之前没有数据，需要注册定时器
-        ctx.timerService().registerEventTimeTimer(value.eventTime * 1000L + 2000L)
-      }
+      // 如果是失败，判断之前是否有登录失败事件
+      val iter = loginFailState.get().iterator()
+      if (iter.hasNext){
+        // 如果已经有登录失败事件，就比较事件时间
+        val firstFail = iter.next()
+        if (value.eventTime < firstFail.eventTime + 2){
+          // 如果两次间隔小于2秒，输出报警
+          out.collect(Warning(value.userId, firstFail.eventTime, value.eventTime, "login fail in 2 seconds."))
+        }
 
-      loginFailState.add(value)
+        // 更新最近一次的登录失败事件，保存在状态里
+        loginFailState.clear()
+        loginFailState.add(value)
+      } else{
+        // 如果是第一次登录失败，直接添加到状态
+        loginFailState.add(value)
+      }
     } else {
       // 如果是成功，清空状态
       loginFailState.clear()
     }
   }
 
-  override def onTimer(timestamp: Long, ctx: KeyedProcessFunction[Long, LoginEvent, Warning]#OnTimerContext, out: Collector[Warning]): Unit = {
-    // 触发定时器的时候，根据状态里的失败个数决定是否输出报警
-    val allLoginFails = new ListBuffer[LoginEvent]
-    val iter: util.Iterator[LoginEvent] = loginFailState.get.iterator()
-    while (iter.hasNext) {
-      allLoginFails += iter.next()
-    }
-
-    // 判断个数
-    if (allLoginFails.length >= maxFailTimes){
-     // out.collect(Warning(ctx.getCurrentKey, ))
-      out.collect(Warning(allLoginFails.head.userId, allLoginFails.head.eventTime, allLoginFails.last.eventTime, "login fail in 2 seconds for " + allLoginFails.length + " times"))
-    }
-
-    // 报警完后，将状态清空
-    loginFailState.clear()
-
-  }
+//  override def onTimer(timestamp: Long, ctx: KeyedProcessFunction[Long, LoginEvent, Warning]#OnTimerContext, out: Collector[Warning]): Unit = {
+//    // 触发定时器的时候，根据状态里的失败个数决定是否输出报警
+//    val allLoginFails = new ListBuffer[LoginEvent]
+//    val iter: util.Iterator[LoginEvent] = loginFailState.get.iterator()
+//    while (iter.hasNext) {
+//      allLoginFails += iter.next()
+//    }
+//
+//    // 判断个数
+//    if (allLoginFails.length >= maxFailTimes){
+//     // out.collect(Warning(ctx.getCurrentKey, ))
+//      out.collect(Warning(allLoginFails.head.userId, allLoginFails.head.eventTime, allLoginFails.last.eventTime, "login fail in 2 seconds for " + allLoginFails.length + " times"))
+//    }
+//
+//    // 报警完后，将状态清空
+//    loginFailState.clear()
+//
+//  }
 }
