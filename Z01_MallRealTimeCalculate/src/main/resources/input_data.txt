@@ -1,0 +1,16 @@
+{
+    "userId": 234567,
+    "orderId": 2902306918400,
+    "subOrderId": 2902306918401,
+    "siteId": 10219,
+    "siteName": "site_blabla",
+    "cityId": 101,
+    "cityName": "北京市",
+    "warehouseId": 636,
+    "merchandiseId": 187699,
+    "price": 299,
+    "quantity": 2,
+    "orderStatus": 1,
+    "isNewOrder": 0,
+    "timestamp": 1572963672217
+}

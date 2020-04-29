@@ -14,6 +14,7 @@
         <module>MarketAnalysis</module>
         <module>LoginFailDetect</module>
         <module>OrderPayDetect</module>
+        <module>Z01_MallRealTimeCalculate</module>
     </modules>
 
     <!-- 父项目的依赖，子项目也是可以共享的 -->
