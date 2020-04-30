@@ -55,8 +55,8 @@ object HotItems {
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
     // 2、读取数据
-    //val dataStream: DataStream[UserBehavior] = env.readTextFile("HotItemsAnalysis/src/main/resources/UserBehavior.csv")
-    val dataStream: DataStream[UserBehavior] = env.addSource(MyKafkaUtil.getConsumer("hotitems"))
+    val dataStream: DataStream[UserBehavior] = env.readTextFile("HotItemsAnalysis/src/main/resources/UserBehavior.csv")
+    //val dataStream: DataStream[UserBehavior] = env.addSource(MyKafkaUtil.getConsumer("hotitems"))
       .map(data => {
         val dataArray: Array[String] = data.split(",")
         UserBehavior(dataArray(0).trim.toLong, dataArray(1).trim.toLong, dataArray(2).trim.toInt, dataArray(3).trim, dataArray(4).trim.toLong)
@@ -68,9 +68,9 @@ object HotItems {
       .filter(_.behavior == "pv")
       .keyBy(_.itemId)
       .timeWindow(Time.hours(1), Time.minutes(5))
-      .aggregate(new CountAgg(), new WindowResult()) // 窗口聚合
-      .keyBy(_.windowEnd) // 按照窗口分组
-      .process(new TopNHotItems(3))
+      .aggregate(new CountAgg(), new WindowResult()) // 窗口聚合；统计最近1个小时，热门商品的被点击的次数，并输出到WindowResult(商品id, 窗口end，点击次数)
+      .keyBy(_.windowEnd) // 按照窗口分组; 再次按窗口end进行分组，得到的就是同一个window下的不同商品被点击的次数
+      .process(new TopNHotItems(3))  // 对同一个window下的不同商品被点击次数进行取TOP
 
     // 4、sink: 控制台输出
     processStream.print()
@@ -101,7 +101,7 @@ class WindowResult() extends WindowFunction[Long, ItemViewCount, Long, TimeWindo
   }
 }
 
-// 自定义的处理函数
+// 自定义的处理函数；对同一个窗口下的商品取热门TOP N
 class TopNHotItems(topSize: Int) extends KeyedProcessFunction[Long, ItemViewCount, String] {
 
   private var itemState: ListState[ItemViewCount] = _
@@ -115,7 +115,7 @@ class TopNHotItems(topSize: Int) extends KeyedProcessFunction[Long, ItemViewCoun
     // 把每条数据存入状态列表
     itemState.add(value)
     // 注册一定定时器
-    ctx.timerService().registerEventTimeTimer(value.windowEnd + 1)
+    ctx.timerService().registerEventTimeTimer(value.windowEnd)
   }
 
   // 定时器触发时，对所有数据排序，并输出结果
