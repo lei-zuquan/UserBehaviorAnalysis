@@ -26,7 +26,7 @@ import redis.clients.jedis.Jedis
  * 在上节的例子中，我们把所有数据的 userId 都存在了窗口计算的状态里，在窗
  * 口收集数据的过程中，状态会不断增大。一般情况下，只要不超出内存的承受范围，
  * 这种做法也没什么问题；但如果我们遇到的数据量很大呢？
- * 把所有数据暂存放到内存里，显然不是一个好注意。我们会想到，可以利用 redis
+ * 把所有数据暂存放到内存里，显然不是一个好主意。我们会想到，可以利用 redis
  * 这种内存级 k-v 数据库，为我们做一个缓存。但如果我们遇到的情况非常极端，数
  * 据大到惊人呢？比如上亿级的用户，要去重计算 UV。
  * 如果放到 redis 中，亿级的用户 id（每个 20 字节左右的话）可能需要几 G 甚至
@@ -141,7 +141,7 @@ class UvCountWithBloom() extends ProcessWindowFunction[(String, Long), UvCount, 
       count = jedis.hget("count", storeKey).toLong
     }
 
-    // 用布隆过虑器判断不前用户是否已经存在
+    // 用布隆过虑器判断当前用户是否已经存在
     val userId = elements.last._2.toString
     val offset: Long = bloom.hash(userId, 61)
     // 定义一个标识位，判断redis位图中有没有这一位
