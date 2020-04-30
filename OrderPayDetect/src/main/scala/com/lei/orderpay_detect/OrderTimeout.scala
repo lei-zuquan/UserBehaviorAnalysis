@@ -20,6 +20,14 @@ import org.apache.flink.streaming.api.windowing.time.Time
  */
 
 /**
+ * 基本需求
+ *    用户下单之后，应设置订单失效时间，以提高用户支付的意愿，并降低系统风险
+ *    用户下单扣15分钟未支付，则输出监控信息
+ *
+ * 解决思路
+ *    利用CEP库进行事件流的模式匹配，并设定匹配的时间间隔
+ *    也可以利用状态编程，用process function实现处理逻辑
+ *
  * 订单支付实时监控 CEP实现
  *
  */
@@ -37,8 +45,8 @@ object OrderTimeout {
     // 1. 读取订单数据
     val resource: URL = getClass.getResource("/OrderLog.csv")
 
-    //val orderEventStream: KeyedStream[OrderEvent, Long] = env.readTextFile(resource.getPath)
-    val orderEventStream: KeyedStream[OrderEvent, Long] = env.socketTextStream("localhost", 7777)
+    val orderEventStream: KeyedStream[OrderEvent, Long] = env.readTextFile(resource.getPath)
+    //val orderEventStream: KeyedStream[OrderEvent, Long] = env.socketTextStream("localhost", 7777)
       .map(data => {
         val dataArray: Array[String] = data.split(",")
         OrderEvent(dataArray(0).trim.toLong, dataArray(1).trim, dataArray(2).trim, dataArray(3).trim.toLong)
