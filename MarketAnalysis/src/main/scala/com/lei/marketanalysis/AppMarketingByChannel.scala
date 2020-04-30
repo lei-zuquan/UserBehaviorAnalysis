@@ -49,7 +49,7 @@ object AppMarketingByChannel {
       })
       .keyBy(_._1) // 以渠道和行为类型作为key分组
       .timeWindow(Time.hours(1), Time.seconds(10))
-      .process(new MarkedingCountByChannel())
+      .process(new MarketingCountByChannel())
 
     dataStream.print()
     env.execute("app marketing by channel job")
@@ -95,16 +95,16 @@ class SimulatedEventSource() extends RichSourceFunction[MarketingUserBehavior] {
 
 
 // 自定义处理函数
-class MarkedingCountByChannel() extends ProcessWindowFunction[((String, String), Long), MarketingViewCount, (String, String), TimeWindow]{
+class MarketingCountByChannel() extends ProcessWindowFunction[((String, String), Long), MarketingViewCount, (String, String), TimeWindow]{
   // elements是全量数据
   override def process(key: (String, String), context: Context, elements: Iterable[((String, String), Long)], out: Collector[MarketingViewCount]): Unit = {
     val startTs = new Timestamp(context.window.getStart).toString
     val endTs = new Timestamp(context.window.getEnd).toString
-    val channal: String = key._1
+    val channel: String = key._1
     val behavior: String = key._2
 
     val count: Int = elements.size
-    out.collect(MarketingViewCount(startTs, endTs, channal, behavior, count))
+    out.collect(MarketingViewCount(startTs, endTs, channel, behavior, count))
 
 
   }

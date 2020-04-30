@@ -23,7 +23,17 @@ import org.apache.flink.util.Collector
  */
 /**
  * 电商用户行为分析   页面广告点击量统计，黑名单过滤
+ *
+ * 基本需求：
+ *    从埋点日志中，统计每小时页面广告的点击量，5秒刷新一次，并按照不同省份进行划分
+ *    对于 "刷单" 式频繁点击行为行为过虑，并将该用户加入黑名单
+ *
+ * 解决思路：
+ *    根据省份进行分组，创建长度为1小时、滑动距离为5秒的时间窗口进行统计
+ *    可以用process function进行黑名单过虑，检测用户对同一广告的点击量，
+ *    如果超过上限则将用户信息以侧输出流输出到黑名单中
  */
+
 // 输入的广告点击事件样例类
 case class AdClickEvent(userId: Long, adId:Long, provice:String, city:String, timestamp: Long)
 // 按照省份统计的输出结果样例类
